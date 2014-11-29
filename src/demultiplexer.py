@@ -215,8 +215,6 @@ def create_folder(folder):
     """ Check out folder exists and create a new one.
     """
     # Check if it exists
-    if not os.path.exists(folder):
-        os.makedirs(folder)
     if os.path.exists(folder):
         response = input('{0} exists. Would you like to overwrite it? [y/n] '.format(folder))
         if response == 'y':
