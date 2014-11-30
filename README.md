@@ -1,2 +1,90 @@
 demultiplexer2
 ==============
+
+phred-aware-illumina-demultiplexer
+==================================
+
+Illumina demultiplexer that incorporates barcode phred scores to prevent misassignment of reads. The current implementation works with MiSeq **single-end or pair-end and single- or dual-indexed** sequencing. It has not been tested with other Illumina platforms.
+
+Current version: v0.9.0
+
+### Dependancies
+- Python (>=3.3)
+- Biopython
+- Java Runtime Environment (tested with openjdk-7-jre and Java SE Runtime Env 1.8)
+
+### Download - TODO
+The repository can be downloaded using git `git clone https://github.com/edm1/phred-aware-illumina-demultiplexer.git` or by following the *Download ZIP* link on the right.
+
+## Step 1: Convert Illumina BCL to FASTQ
+The script `1_run_IlluminaBasecallsToFastq.py` is used as a wrapper to run Picard's *IlluminaBasecallsToFastq.jar* module. Run using:
+
+```
+python [or pypy] 1_run_IlluminaBasecallsToFastq.py [-h] --BaseCallDir <dir>
+                                                        --RunParamXML <runParameters.xml>
+                                                        --Lane <int> --ReadStructure <str>
+                                                        [--JarLoc <*.jar>] [--numCPU <int>]
+                                                        [--readsPerTile <int>]
+                                                        [--MaxInRam <int>] [--JavaRAM <int>]
+
+```
+
+View full list of arguments using `python 1_run_IlluminaBasecallsToFastq.py --help`
+
+##### Required
+- `--BaseCallDir` - `MiSeqOutput/Data/Intensities/BaseCalls` directory containing BCL files.
+- `--RunParamXML` - `runParameters.xml` file from the MiSeqOutput directory.
+- `--ReadStructure` - Read structure ([as described here](http://picard.sourceforge.net/command-line-overview.shtml#IlluminaBasecallsToFastq)). For example, for MiSeq single-end dual-indexed sequencing with reads of length 151, the read structure is `151T8B8B` (151 cycles of template, 8 cycles of barcode, 8 cycles of barcode).
+- `--Lane` - Lane number
+
+##### Optional
+- `--JarLoc` - Location of IlluminaBasecallsToFastq.jar (../lib/picard-tools-1.115/IlluminaBasecallsToFastq.jar)
+- `--numCPU` - Number of CPUs to use. (1)
+- `--readsPerTile` - Max number of reads in RAM per tile, reduce if you have problems with memory. (120000)
+- `--JavaRAM` - Amount of RAM allocated to Java heap. Increase if having problems. (2)
+
+##### Determining read structure
+Read structure can be determined from the `runParameters.xml` file. Go to the section between the `<Reads> ... </Reads>` tags. It will look something like this:
+
+```
+<Reads>
+  <RunInfoRead Number="1" NumCycles="300" IsIndexedRead="N"/>
+  <RunInfoRead Number="2" NumCycles="8" IsIndexedRead="Y"/>
+  <RunInfoRead Number="3" NumCycles="8" IsIndexedRead="Y"/>
+</Reads>
+```
+T denontes read template and B denotes a barcode/indexed read. In the above example for single-end dual-indexed reads, the read structure would be 300T8B8B.
+
+
+### Output
+This script will extract FASTQs from the BCL files and output them to `temp/<run id>`
+
+### Troubleshooting
+If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `InterOp` needs to be present in addition to `Data/Intensities/BaseCalls`.
+
+## Step 2: Demultiplex FASTQs into separate sample files
+Barcodes are checked against sample indexes. The probability that the two underlaying sequences (barcode and index) are the same is calculated using the phred quality scores. I.e. the probability that the true bases match given that the sequenced bases match/mismatch is calculated across the index/barcode. Script is run using:
+
+```
+python [or pypy] 2_demultiplex_fastqs.py [-h] --InputTempDir <dir> --SampleSheet
+                                              <SampleSheet.csv> --OutID <str>
+                                              [--ResultsDir <dir>] [--MinProb <float>]
+                                              [--PhredOffset <int>] [--IndexQual <int>]
+
+```
+
+##### Required
+- `--InputTempDir` - Directory containing temp files output by 1_run_IlluminaBasecallsToFastq.py
+- `--SampleSheet` - MiSeq output SampleSheet.csv file containing barcode indexes and sample names.
+- `--OutID` - Unique ID to append to the output folder name.
+
+##### Optional
+- `--MinProb` - Minimum probability of a match, else discard. (0.05)
+- `--IndexQual` - Phred-score given to index sequence. (30)
+- `--OutDir` - Results directory. (default: ./results)
+- `--PhredOffset` - FASTQ phred score offset. (33)
+
+### Output
+For each of the sample indexes + not-assigned reads, the script outputs:
+1. FASTQs for the demultiplexed reads
+2. FASTQs containing the barcodes of each of the reads

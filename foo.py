@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # Author: Edward Mountjoy
@@ -11,6 +11,7 @@ import os
 import inspect
 from src import basecalls2fastq
 from src import demultiplexer
+import sys
 
 def main():
     """ Parses args and executes required script.
@@ -34,7 +35,7 @@ def parse_arguments(root_dir):
     """
 
     # Create top level parser. TODO: add description, usage, etc
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser('main')
     subparsers = parser.add_subparsers()
 
     # Create parser for the bcl2fastq (extracting reads from illumina folder)
@@ -89,10 +90,20 @@ def parse_arguments(root_dir):
     parser_demux.set_defaults(func=demultiplexer.run)
 
     # Add version number to the parser
-    parser.add_argument('-v', '--version', action='version', version='v0.4')
+    parser.add_argument('-v', '--version', action='version', version='v0.9.0')
 
     # Parse the arguments
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # Workaround for sub-parser bug (http://bugs.python.org/issue16308)
+    try:
+        a = getattr(args, "func")
+    except AttributeError:
+        print(parser.print_help())
+        sys.exit(0)
+
+    # Parse the arguments
+    return args
 
 if __name__ == '__main__':
     main()

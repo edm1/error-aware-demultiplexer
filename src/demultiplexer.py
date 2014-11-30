@@ -1,21 +1,10 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #
 #
 
-# import gzip
-# import sys
-# import os
-# from shutil import rmtree
-# import inspect
-# from operator import itemgetter
-# from src.bio_file_parsers import fastq_parser, phred_score_dict, write_fastq
-# from Bio import SeqIO
-# from src.probabilistic_seq_match import base_prob, sequences_match_prob
-# import glob
-
-import src.probabilistic_seq_match as seqprob
+from src.probabilistic_seq_match import sequences_match_prob
+from src.probabilistic_seq_match import base_prob
 import sys
 import os
 from shutil import rmtree
@@ -25,13 +14,15 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import SingleLetterAlphabet
+from operator import itemgetter
+import concurrent.futures as cf
 
 def run(args):
 
     # Precompute base probabilities for phredscores up to 50
     base_prob_precompute = {}
     for score in range(1, 51):
-        base_prob_precompute[score] = seqprob.base_prob(score)
+        base_prob_precompute[score] = base_prob(score)
 
     # Check that the multiplexed path exists
     multiplexed_dir = os.path.join(args.inDir, "multiplexed")
@@ -48,21 +39,179 @@ def run(args):
 
     # Initiate multiplexed class
     multiplexed = Multiplex(multiplexed_dir)
-    for out in multiplexed.iterate():
-        rec = out[0][0]
-        print(dir(rec))
-        print(rec.letter_annotations['phred_quality'])
-        break
 
     # Initiate sample sheet and read possible indexes
     sampleSheet = SampleSheet(args.sampleSheet)
     sampleSheet.parse(args.indexQual)
-    for sample in sampleSheet.sample_indexes:
-        rec = sampleSheet.sample_indexes[sample][0]
-        print(rec.seq)
-        print(rec.letter_annotations['phred_quality'])
+
+    # Check that there are the same number of indexes in sample sheet and
+    # multiplexed fastqs
+    if sampleSheet.is_dualindexed != multiplexed.is_dualindexed:
+        sys.exit("Error: Different number of indexes in sampleSheet and "
+                 "multiplexed reads. Exiting!")
+
+    # Open output class for each sample, and a not_assigned group
+    sample_out = {}
+    for sample in list(sampleSheet.sample_indexes.keys()) + ['not_assigned']:
+        sample_out[sample] = Sample(sample, out_dir, multiplexed.is_pairend,
+                                    multiplexed.is_dualindexed)
+
+    # Send each read/barcode record to futures to match up to sample
+    with cf.ProcessPoolExecutor(max_workers=args.numCPU) as executor:
+        c = 1
+        # Map read/barcode records
+        for output in executor.map(futures_barcode_to_indexes,
+            futures_iterate_reads(multiplexed, sampleSheet,
+                base_prob_precompute, args.minProb)):
+            # Unpack output
+            ((read_records, barcode_records), sample, prob, _) = output
+            # Write record to correct sample file
+            sample_out[sample].write(read_records, barcode_records)
+
+            # Update progress
+            if c % 1000 == 0:
+                print(c)
+            c += 1
 
     return 0
+
+def futures_iterate_reads(multiplexed, sampleSheet, base_prob_precompute,
+                          min_prob):
+    """ Returns an iterator that contains everything needed for futures.
+    """
+    for combined_record in multiplexed.iterate():
+        yield (combined_record, sampleSheet, base_prob_precompute, min_prob)
+
+def futures_barcode_to_indexes(variables):
+    """ Compares the reads barcodes to sample indexes and returns matching
+        sample name.
+    """
+    # Unpack variables
+    (combined_record, sampleSheet,
+     base_prob_precompute, min_prob) = variables
+    # Get barcode records
+    _, barcode_records = combined_record
+    # Find sample
+    b1_header, sample, prob = match_barcode_to_indexes(barcode_records,
+        sampleSheet, base_prob_precompute, min_prob)
+    if sample == None:
+        sample = 'not_assigned'
+    # Append probability to barcode1 header
+    b1_header = "{0}_{1}".format(b1_header, prob)
+    # Change header
+    combined_record[1][0].id = b1_header
+
+    return combined_record, sample, prob, b1_header
+
+
+def match_barcode_to_indexes(barcode_records, sampleSheet, base_prob_precompute,
+                             min_prob):
+    """ For the barcode pair, caluclates probability of a match against each set
+        of indexes
+    """
+
+    index_probs = {}
+
+    for sample_name in sampleSheet.sample_indexes:
+
+        index_records = sampleSheet.sample_indexes[sample_name]
+
+        # Calculate the match probability for barcode 1
+        b1_prob = sequences_match_prob(index_records[0].seq,
+            index_records[0].letter_annotations['phred_quality'],
+            barcode_records[0].seq,
+            barcode_records[0].letter_annotations['phred_quality'],
+            base_prob_precompute, 0)
+
+        # Do for second barcode if present
+        if sampleSheet.is_dualindexed:
+            # Skip if already below the threshold, else assign same prob as b1
+            if b1_prob >= min_prob:
+                b2_prob = sequences_match_prob(index_records[1].seq,
+                           index_records[1].letter_annotations['phred_quality'],
+                           barcode_records[1].seq,
+                           barcode_records[1].letter_annotations['phred_quality'],
+                           base_prob_precompute, 0)
+            else:
+                b2_prob = b1_prob
+
+        # Caluclate combined probability
+        if sampleSheet.is_dualindexed:
+            overall_prob = b1_prob * b2_prob
+        else:
+            overall_prob = b1_prob
+
+        index_probs[sample_name] = overall_prob
+
+    sorted_probs = sorted(index_probs.items(), key=itemgetter(1),
+                          reverse=True)
+
+    # Return header, sample, prob
+    header = barcode_records[0].id
+    if sorted_probs[0][1] > min_prob:
+        return header, sorted_probs[0][0], sorted_probs[0][1]
+    else:
+        return header, None, sorted_probs[0][1]
+
+
+class Sample:
+    # Class for each possible sample. 1) Holds the output directory for that
+    # sample. 2) Opens handles. 3) Writes record to sample.
+    
+    def __init__(self, name, out_dir, is_pe, id_dual):
+        self.read_paths = []
+        self.barcode_paths = []
+        self.read_handles = None
+        self.barcode_handles = None
+        
+        # Create directory for sample
+        name = name.replace(' ', '_')
+        self.sample_dir = os.path.join(out_dir, name)
+        create_folder(self.sample_dir)
+
+        # Create read paths
+        self.read_paths.append(os.path.join(self.sample_dir,
+            '{0}.R1.fastq.gz'.format(name)))
+        if is_pe:
+            self.read_paths.append(os.path.join(self.sample_dir,
+                '{0}.R2.fastq.gz'.format(name)))
+        # Create barcode paths
+        self.barcode_paths.append(os.path.join(self.sample_dir,
+            '{0}.barcode_1.fastq.gz'.format(name)))
+        if id_dual:
+            self.barcode_paths.append(os.path.join(self.sample_dir,
+                '{0}.barcode_2.fastq.gz'.format(name)))
+
+    def open_handles(self):
+        """ For the reads and barcodes, opens output handles.
+        """
+        self.read_handles = [get_handle(read_path, 'wt') for read_path
+                             in self.read_paths]
+        self.barcode_handles = [get_handle(barcode_path, 'wt') for barcode_path
+                                in self.barcode_paths]
+        return 0
+
+    def write(self, read_records, barcode_records):
+        """ Writes the demultiplexed read and barcode records to sample file.
+        """
+        # Open handles if not open
+        if self.read_handles == None:
+            self.open_handles()
+        # Write read records
+        for i in range(len(read_records)):
+            SeqIO.write(read_records[i], self.read_handles[i], "fastq")
+        # Write barcode records
+        for i in range(len(barcode_records)):
+            SeqIO.write(barcode_records[i], self.barcode_handles[i], "fastq")
+        return 0
+
+    def close_handles():
+        """ Closes any open handles.
+        """
+        if self.read_handles != None:
+            for handle in self.read_handles + self.barcode_handles:
+                handle.close()
+        return 0
 
 class SampleSheet:
     # Class to hold the sample sheet and retrieve indexes from it.
@@ -184,7 +333,6 @@ class Multiplex:
         # Open iterators for each handle
         read_iterators, barcode_iterators = self.open_seqIO_iterators(
             read_handles, barcode_handles)
-        print('here')
 
         # Iterate through records
         for r1_record in read_iterators[0]:
@@ -232,211 +380,3 @@ def get_handle(filen, rw):
         return gzip.open(filen, rw)
     else:
         return open(filen, rw)
-
-"""
-    # Load reads/barcodes
-    multiplexed_reads = Reads(args.InputTempDir)
-    # Open file handles
-    multiplexed_reads.open_handles()
-
-    # Load indexes from sample sheet
-    indexes = Indexes()
-    indexes.load_samplesheet_indexes(args.SampleSheet, phred_dict_inv[args.IndexQual])
-    # Update indexes class with whether pe or se
-    if len(multiplexed_reads.read_filenames) == 2:
-        indexes.pair_end = True
-    # Create output handles in results folder for each sample name
-    indexes.open_out_handles(out_dir)
-
-    # Check number of barcode files matches number of indexes
-    if not len(multiplexed_reads.barcode_filenames) == indexes.num_indexes():
-        sys.exit('Incorrect number of indexes in sample sheet. Exiting.')
-
-    # Iterate over each barcode/read set and look for matches in indexes
-    c = 1
-    for read_records, barcode_records in multiplexed_reads.iterate():
-
-        # Find best index match
-        b1_header, sample, prob = match_barcode_to_indexes(barcode_records, indexes,
-                                                           base_prob_precompute, args.MinProb)
-        if sample == None:
-            sample = 'not_assigned'
-
-        # Append probability to the (b1) header
-        b1_header = "{0} {1}".format(b1_header, prob)
-
-        # Write fastqs
-        read_records[0]
-        for i in range(len(read_records)):
-            write_fastq(indexes.demux_handles[sample][i],
-                        read_records[i].title,
-                        read_records[i].seq,
-                        read_records[i].qual_string)
-
-        # Write barcode fastqs
-        for i in range(len(barcode_records)):
-            write_fastq(indexes.barcode_handles[sample][i],
-                        barcode_records[i].title,
-                        barcode_records[i].seq,
-                        barcode_records[i].qual_string)
-
-        # Update progress
-        if c % 10000 == 0:
-            print('Done: {0:,}'.format(c))
-        c += 1
-
-    print("Finished!")
-
-    # Close all handles
-    indexes.close_out_handles()
-    multiplexed_reads.close_handles()
-"""
-
-class Indexes:
-    # Class to parse and hold the indexes.
-
-    def __init__(self):
-        self.index_dict = None
-        self.dual_end = False
-        self.pair_end = False
-        self.demux_handles = None
-        self.barcode_handles = None
-
-    def open_out_handles(self, results_dir):
-        """ For each sample name open an write handle.
-        """
-        # For each sample name create a output file handle
-        self.demux_handles = {}
-        self.barcode_handles = {}
-
-        for sample_name in list(self.index_dict.keys()) + ['not_assigned']:
-
-            # Open handles for the read 1
-            reads_name = os.path.join(results_dir, '{0}.R1.fastq.gz'.format(sample_name.replace(' ', '_')))
-            self.demux_handles[sample_name] = [get_handle(reads_name, 'w')]
-            # If pair-end then append another handle
-            if self.pair_end == True:
-                reads_name = os.path.join(results_dir, '{0}.R2.fastq.gz'.format(sample_name.replace(' ', '_')))
-                self.demux_handles[sample_name].append(get_handle(reads_name, 'w'))
-
-            # Open for barcode 1
-            barcode_name = os.path.join(results_dir, '{0}.barcode_1.fastq.gz'.format(sample_name.replace(' ', '_')))
-            self.barcode_handles[sample_name] = [get_handle(barcode_name, 'w')]
-            # If dual indexed then append
-            if self.dual_end == True:
-                barcode_name = os.path.join(results_dir, '{0}.barcode_2.fastq.gz'.format(sample_name.replace(' ', '_')))
-                self.barcode_handles[sample_name].append(get_handle(barcode_name, 'w'))
-
-        return 0
-
-    def num_indexes(self):
-        if self.dual_end == True:
-            return 2
-        else:
-            return 1
-
-    def close_out_handles(self):
-        """ Closes all of the open out handles.
-        """
-        for handle_dict in [self.demux_handles, self.barcode_handles]:
-            for sample_name in handle_dict:
-                for handle in handle_dict[sample_name]:
-                    handle.close()
-        return 0
-
-    def load_samplesheet_indexes(self, filen, index_ascii):
-        """ Will find check if one of two indexes are used then load them.
-        """
-        with open(filen, 'r') as in_h:
-            # Skip to line after [Data]
-            line = in_h.readline()
-            while not line.startswith('[Data]'):
-                line = in_h.readline()
-            # Get header
-            header = in_h.readline().rstrip().lower().split(',')
-            col_ind = dict(zip(header, range(len(header))))
-            # Get indexes
-            self.index_dict = {}
-            for line in in_h:
-                # Break if EOF
-                if line.strip() == "":
-                    break
-                # Get info
-                parts = line.rstrip().split(',')
-                sample_name = parts[col_ind['sample_name']]
-                # Get first index
-                index1 = parts[col_ind['index']]
-                self.index_dict[sample_name] = [(index1, index_ascii * len(index1))]
-                # Get second index
-                if "index2" in col_ind.keys():
-                    index2 = parts[col_ind['index2']]
-                    self.index_dict[sample_name].append((index2, index_ascii * len(index1)))
-        # Save whether it is dual end
-        if "index2" in col_ind.keys():
-            self.dual_end = True
-
-class Record:
-    # Class to hold a single fastq record
-
-    def __init__(self, record):
-        """ record is a tuple/list in form (title, seq, qual)
-        """
-        self.title = record[0]
-        self.seq = record[1]
-        self.qual_string = record[2]
-
-
-def match_barcode_to_indexes(barcode_records, indexes, base_prob_precompute, min_prob):
-    """ For the barcode pair, caluclates probability of a match against each set
-        of indexes
-    """
-
-    index_probs = {}
-
-    for sample_name in indexes.index_dict:
-
-        index_records = indexes.index_dict[sample_name]
-
-        # Calculate the match probability for barcode 1
-        b1_prob = sequences_match_prob(index_records[0][0], index_records[0][1],
-                                       barcode_records[0].seq, barcode_records[0].qual_string,
-                                       base_prob_precompute, 0)
-
-        # If dual indexed calc prob of other match
-        b2_prob = None
-        if indexes.dual_end == True:
-            # Skip if already below the threshold
-            if b1_prob >= min_prob:
-                b2_prob = sequences_match_prob(index_records[1][0], index_records[1][1],
-                                               barcode_records[1].seq, barcode_records[1].qual_string,
-                                               base_prob_precompute, 0)
-            else:
-                b2_prob = b1_prob
-
-        # Caluclate combined probability
-        if b2_prob != None:
-            overall_prob = b1_prob * b2_prob
-        else:
-            overall_prob = b1_prob
-        index_probs[sample_name] = overall_prob
-
-    sorted_probs = sorted(index_probs.iteritems(), key=itemgetter(1), reverse=True)
-
-    # Return header, sample, prob
-    header = barcode_records[0].title
-    if sorted_probs[0][1] > min_prob:
-        return header, sorted_probs[0][0], sorted_probs[0][1]
-    else:
-        return header, None, sorted_probs[0][1]
-
-def phred_score_dict(offset):
-    """ Creates a dict of phred score values
-    """
-    ascii_string = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
-    offset_string = ascii_string[offset - 33:]
-
-    phred_dict = {}
-    for i in range(len(offset_string)):
-        phred_dict[offset_string[i]] = float(i)
-
-    return phred_dict

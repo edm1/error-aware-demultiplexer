@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Code containing functions for calculatinf sequence match probabilities
 #
 
-def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, base_prob_precompute, stop_thresh):
+def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, base_prob_precompute,
+                         stop_thresh):
     """ Given two sequences and their quality scores
     """
 
