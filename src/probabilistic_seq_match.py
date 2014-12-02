@@ -14,7 +14,7 @@ def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, base_prob_precompute,
     # For each base
     for i in range(len(a_seq)):
         # If Either is N, then prob is 0.25
-        if a_seq[i] == 'N' or b_seq == 'N':
+        if a_seq[i] == 'N' or b_seq[i] == 'N':
             match_prob = 0.25
         else:
             # Calculate the base probabilities
