@@ -15,8 +15,9 @@ indexed reads, and single or pair-end reads.
 #### Download
 The repository can be downloaded using git `git clone https://github.com/edm1/aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
 
-#### Recommendation
+#### Recommended
 - [PyPy3 2.4.0](http://pypy.org/)
+- 
 Using pypy3 instead of python3 will give approximately 3x speed up.
 
 ## Usage
