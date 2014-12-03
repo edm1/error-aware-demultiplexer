@@ -56,6 +56,22 @@ def run(args):
         sample_out[sample] = Sample(sample, out_dir, multiplexed.is_pairend,
                                     multiplexed.is_dualindexed)
 
+    # Version that doesnt use concurrent.futures
+    c = 1
+    for variables in futures_iterate_reads(multiplexed, sampleSheet,
+                                           base_prob_precompute, args.minProb):
+        output = futures_barcode_to_indexes(variables)
+        # Unpack output
+        ((read_records, barcode_records), sample, prob, _) = output
+        # Write record to correct sample file
+        sample_out[sample].write(read_records, barcode_records)
+        # Update progress
+        if c % 1000 == 0:
+            print(c)
+        c += 1
+
+
+    """
     # Send each read/barcode record to futures to match up to sample
     with cf.ProcessPoolExecutor(max_workers=args.numCPU) as executor:
         c = 1
@@ -72,6 +88,7 @@ def run(args):
             if c % 1000 == 0:
                 print(c)
             c += 1
+    """
 
     return 0
 
