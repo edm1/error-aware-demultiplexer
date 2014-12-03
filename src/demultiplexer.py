@@ -9,13 +9,13 @@ from src.fastqparser import phred_score_dict
 from src.fastqparser import fastqIterator
 from src.fastqparser import Fastq
 from src.fastqparser import fastqWriter
-import sys
-import os
+from operator import itemgetter
 from shutil import rmtree
 import glob
 import gzip
-from operator import itemgetter
-import concurrent.futures as cf
+import sys
+import os
+#import concurrent.futures as cf
 
 def run(args):
 
@@ -80,9 +80,6 @@ def run(args):
     # Close all sample handles
     for sample_name in sample_out:
         sample_out[sample_name].close_handles()
-
-
-
 
     """
     # Send each read/barcode record to futures to match up to sample
