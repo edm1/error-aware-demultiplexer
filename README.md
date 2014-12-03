@@ -49,10 +49,9 @@ usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
 
 
 ##### Required
-- `--BaseCallDir` - `MiSeqOutput/Data/Intensities/BaseCalls` directory containing BCL files.
-- `--RunParamXML` - `runParameters.xml` file from the MiSeqOutput directory.
-- `--ReadStructure` - Read structure ([as described here](http://picard.sourceforge.net/command-line-overview.shtml#IlluminaBasecallsToFastq)). For example, for MiSeq single-end dual-indexed sequencing with reads of length 151, the read structure is `151T8B8B` (151 cycles of template, 8 cycles of barcode, 8 cycles of barcode).
-- `--Lane` - Lane number
+- `<baseCallDir>` - `MiSeqOutput/Data/Intensities/BaseCalls` directory containing BCL files.
+- `<runParameters.xml>` - `MiSeqOutput/runParameters.xml` file.
+- `<lane>` - Lane number
 
 ##### Optional
 - `--JarLoc` - Location of IlluminaBasecallsToFastq.jar (../lib/picard-tools-1.115/IlluminaBasecallsToFastq.jar)
