@@ -36,7 +36,7 @@ The aware.py sub-commands include:
 
 To see further help for each sub-command use `pypy3 aware.py <subcommand> -h`.
 
-### Sub-command: bcl2fastq
+#### Sub-command: bcl2fastq
 
 `bcl2fastq` extracts read and barcode fastq files from Illumina .bcl files.
 
