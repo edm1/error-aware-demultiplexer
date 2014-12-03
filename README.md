@@ -13,7 +13,7 @@ indexed reads, and single or pair-end reads.
 - Java Runtime Environment (tested with openjdk-7-jre and Java SE Runtime Env 1.8)
 
 #### Download
-The repository can be downloaded using git `git clone https://github.com/edm1/aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
+The repository can be downloaded using `git clone https://github.com/edm1/aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
 
 #### Recommended
 - [PyPy3](http://pypy.org/) (>=2.4.0)
