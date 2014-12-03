@@ -22,19 +22,20 @@ Using pypy3 instead of python3 will give approximately 3x speed up.
 
 ## Usage
 
-The script is split into two sub-commands ``
-
-The script `1_run_IlluminaBasecallsToFastq.py` is used as a wrapper to run Picard's *IlluminaBasecallsToFastq.jar* module. Run using:
+The script is split into two sub-commands `bcl2fastq` and `demux`.
 
 ```
-python [or pypy] 1_run_IlluminaBasecallsToFastq.py [-h] --BaseCallDir <dir>
-                                                        --RunParamXML <runParameters.xml>
-                                                        --Lane <int> --ReadStructure <str>
-                                                        [--JarLoc <*.jar>] [--numCPU <int>]
-                                                        [--readsPerTile <int>]
-                                                        [--MaxInRam <int>] [--JavaRAM <int>]
+usage: pypy3 aware.py [-h] [-v] <subcommand> [options]
 
+The aware.py sub-commands include:
+  <subcommand>
+    bcl2fastq    Extracts multiplexed reads and barcodes from Illumina bcl
+                 files.
+    demux        Demultiplex the fastqs extracted by bcl2fastq using indexes
+                 provided in sampleSheet.csv.
 ```
+
+To see further help for each sub-command use `pypy3 aware.py <subcommand> -h`.
 
 View full list of arguments using `python 1_run_IlluminaBasecallsToFastq.py --help`
 
