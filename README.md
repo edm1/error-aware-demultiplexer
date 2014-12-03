@@ -84,4 +84,6 @@ usage: pypy3 aware.py demux [-h] [--uniqID <str>] [--minProb <float>]
 - `--phredOffset` - FASTQ phred score offset. (33)
 - `--indexQual` - Phred-score given to all bases in index sequence. (30)
 
+## Acknowledgements
 
+The Broad Institutes [Picard tool](github.com/broadinstitute/picard) is used to extract FASTQs from Illumina BCL files.
