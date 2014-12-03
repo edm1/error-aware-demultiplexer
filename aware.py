@@ -131,7 +131,7 @@ def parse_arguments(root_dir):
     try:
         a = getattr(args, "func")
     except AttributeError:
-        print(parser.print_help())
+        parser.print_help()
         sys.exit(0)
 
     # Parse the arguments
