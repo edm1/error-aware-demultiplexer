@@ -61,8 +61,8 @@ usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
 - `--JavaRAM` - Amount of RAM allocated to Java heap. Increase if having problems. (2)
 - `--JarLoc` - Location of picard.jar (./libs/picard.jar)
 
-### Troubleshooting
-If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `InterOp` needs to be present in addition to `Data/Intensities/BaseCalls`.
+##### Troubleshooting
+If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `MiSeqOutput/InterOp` needs to be present in addition to `MiSeqOutput/Data/Intensities/BaseCalls`.
 
 ## Step 2: Demultiplex FASTQs into separate sample files
 Barcodes are checked against sample indexes. The probability that the two underlaying sequences (barcode and index) are the same is calculated using the phred quality scores. I.e. the probability that the true bases match given that the sequenced bases match/mismatch is calculated across the index/barcode. Script is run using:
