@@ -36,7 +36,7 @@ The aware.py sub-commands include:
 
 To see further help for each sub-command use `pypy3 aware.py <subcommand> -h`.
 
-### Sub-command: bcl2fastq
+#### Sub-command: bcl2fastq
 
 `bcl2fastq` extracts read and barcode fastq files from Illumina .bcl files.
 
@@ -64,7 +64,7 @@ usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
 ##### Troubleshooting
 If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `MiSeqOutput/InterOp` needs to be present in addition to `MiSeqOutput/Data/Intensities/BaseCalls`.
 
-### Sub-command: demux
+#### Sub-command: demux
 
 Using index sequences provided in sampleSheet.csv, it will demultiplex the fastqs extracted by bcl2fastq.
 
@@ -112,4 +112,28 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+The function src.fastqparser.fastqIterator was adpated from the biopython source.
+
+```
+Biopython License Agreement
+
+Permission to use, copy, modify, and distribute this software and its
+documentation with or without modifications and for any purpose and
+without fee is hereby granted, provided that any copyright notices
+appear in all copies and that both those copyright notices and this
+permission notice appear in supporting documentation, and that the
+names of the contributors or copyright holders not be used in
+advertising or publicity pertaining to distribution of the software
+without specific prior permission.
+
+THE CONTRIBUTORS AND COPYRIGHT HOLDERS OF THIS SOFTWARE DISCLAIM ALL
+WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY SPECIAL, INDIRECT
+OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE
+OR PERFORMANCE OF THIS SOFTWARE.
 ```
