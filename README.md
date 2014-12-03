@@ -28,7 +28,6 @@ The script is split into two sub-commands `bcl2fastq` and `demux`.
 usage: pypy3 aware.py [-h] [-v] <subcommand> [options]
 
 The aware.py sub-commands include:
-  <subcommand>
     bcl2fastq    Extracts multiplexed reads and barcodes from Illumina bcl
                  files.
     demux        Demultiplex the fastqs extracted by bcl2fastq using indexes
