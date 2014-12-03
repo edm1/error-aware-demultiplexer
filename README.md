@@ -64,29 +64,24 @@ usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
 ##### Troubleshooting
 If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `MiSeqOutput/InterOp` needs to be present in addition to `MiSeqOutput/Data/Intensities/BaseCalls`.
 
-## Step 2: Demultiplex FASTQs into separate sample files
-Barcodes are checked against sample indexes. The probability that the two underlaying sequences (barcode and index) are the same is calculated using the phred quality scores. I.e. the probability that the true bases match given that the sequenced bases match/mismatch is calculated across the index/barcode. Script is run using:
+### Sub-command: demux
+
+Given the index sequences that are provided in sampleSheet.csv, it demultiplexes fastqs that are extracted by bcl2fastq.
 
 ```
-python [or pypy] 2_demultiplex_fastqs.py [-h] --InputTempDir <dir> --SampleSheet
-                                              <SampleSheet.csv> --OutID <str>
-                                              [--ResultsDir <dir>] [--MinProb <float>]
-                                              [--PhredOffset <int>] [--IndexQual <int>]
-
+usage: pypy3 aware.py demux [-h] [--uniqID <str>] [--minProb <float>]
+                            [--phredOffset <int>] [--indexQual <int>]
+                            <inDir> <SampleSheet.csv>
 ```
 
 ##### Required
-- `--InputTempDir` - Directory containing temp files output by 1_run_IlluminaBasecallsToFastq.py
-- `--SampleSheet` - MiSeq output SampleSheet.csv file containing barcode indexes and sample names.
-- `--OutID` - Unique ID to append to the output folder name.
+- `<inDir>` - Directory containing `multiplexed` folder output by bcl2fastq.
+- `<sampleSheet.csv>` - MiSeq SampleSheet.csv file containing barcode indexes and sample names.
 
 ##### Optional
-- `--MinProb` - Minimum probability of a match, else discard. (0.05)
-- `--IndexQual` - Phred-score given to index sequence. (30)
-- `--OutDir` - Results directory. (default: ./results)
-- `--PhredOffset` - FASTQ phred score offset. (33)
+- `--uniqID` - Unique ID to append to output folder. Useful if testing multiple parameters. (None)
+- `--minProb` - Minimum overall probability that a barcode and index match, else sample = "not_assigned". (0.05)
+- `--phredOffset` - FASTQ phred score offset. (33)
+- `--indexQual` - Phred-score given to all bases in index sequence. (30)
 
-### Output
-For each of the sample indexes + not-assigned reads, the script outputs:
-1. FASTQs for the demultiplexed reads
-2. FASTQs containing the barcodes of each of the reads
+
