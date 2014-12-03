@@ -66,7 +66,7 @@ If you get the error "Could not find a format with available files for the follo
 
 ### Sub-command: demux
 
-Given the index sequences that are provided in sampleSheet.csv, it demultiplexes fastqs that are extracted by bcl2fastq.
+Using index sequences provided in sampleSheet.csv, it will demultiplex the fastqs extracted by bcl2fastq.
 
 ```
 usage: pypy3 aware.py demux [-h] [--uniqID <str>] [--minProb <float>]
