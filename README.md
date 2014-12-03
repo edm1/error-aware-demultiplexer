@@ -6,15 +6,23 @@ Current version: v0.9.1
 Probabilistic demultiplexer for Illumina bcl files. Works with single or dual-
 indexed reads, and single or pair-end reads.
 
+## Setup
+
 #### Dependancies
 - Python (>=3.2)
-- Biopython
 - Java Runtime Environment (tested with openjdk-7-jre and Java SE Runtime Env 1.8)
 
-### Download - TODO
-The repository can be downloaded using git `git clone https://github.com/edm1/phred-aware-illumina-demultiplexer.git` or by following the *Download ZIP* link on the right.
+#### Download
+The repository can be downloaded using git `git clone https://github.com/edm1/aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
 
-## Step 1: Convert Illumina BCL to FASTQ
+#### Recommendation
+- [PyPy3 2.4.0](http://pypy.org/)
+Using pypy3 instead of python3 will give approximately 3x speed up.
+
+## Usage
+
+The script is split into two sub-commands ``
+
 The script `1_run_IlluminaBasecallsToFastq.py` is used as a wrapper to run Picard's *IlluminaBasecallsToFastq.jar* module. Run using:
 
 ```
