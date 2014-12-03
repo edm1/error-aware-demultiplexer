@@ -3,14 +3,11 @@
 # Code containing functions for calculatinf sequence match probabilities
 #
 
-def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, base_prob_precompute,
-                         stop_thresh):
+def sequences_match_prob(a_seq, a_prob, b_seq, b_prob, stop_thresh):
     """ Given two sequences and their quality scores
     """
-
     # Calc prob
     prob = 1.0
-
     # For each base
     for i in range(len(a_seq)):
         # If Either is N, then prob is 0.25
@@ -18,8 +15,8 @@ def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, base_prob_precompute,
             match_prob = 0.25
         else:
             # Calculate the base probabilities
-            prob_A = base_prob_precompute[a_qual[i]]
-            prob_B = base_prob_precompute[b_qual[i]]
+            prob_A = a_prob[i]
+            prob_B = b_prob[i]
             # Calc probability of a match
             if a_seq[i] == b_seq[i]:
                 match_prob = match_given_match_prob(prob_A, prob_B)
@@ -44,12 +41,6 @@ def match_given_match_prob(x_prob, y_prob):
     """
     return (1 - x_prob) * (1 - y_prob) + (x_prob * y_prob) / 3
 
-def base_prob(phred_score):
-    """ Returns the probabilty that a base is incorrect, given its
-        Phred score.
-    """
-    prob = 10.0**(-float(phred_score)/10)
-    return prob
 
 def phred_score(letter, offset, ascii):
     """ Returns the Phred score of a fastq quality character.
@@ -64,3 +55,11 @@ def phred_score(letter, offset, ascii):
         score += 1
     # If no score is found then there must be an error
     raise ValueError
+
+
+def base_prob(phred_score):
+    """ Returns the probabilty that a base is incorrect, given its
+        Phred score.
+    """
+    prob = 10.0**(-float(phred_score)/10)
+    return prob

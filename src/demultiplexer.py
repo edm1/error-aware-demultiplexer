@@ -3,26 +3,32 @@
 #
 #
 
-from src.probabilistic_seq_match import sequences_match_prob
-from src.probabilistic_seq_match import base_prob
+from src.probabilisticSeqMatch import sequences_match_prob
+from src.probabilisticSeqMatch import base_prob
+from src.fastqparser import phred_score_dict
+from src.fastqparser import fastqIterator
+from src.fastqparser import Fastq
+from src.fastqparser import fastqWriter
 import sys
 import os
 from shutil import rmtree
 import glob
 import gzip
-from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import SingleLetterAlphabet
 from operator import itemgetter
 import concurrent.futures as cf
 
 def run(args):
 
+    # Precompute string to phred scores dictionary
+    phred_dict = phred_score_dict(args.phredOffset)
+
     # Precompute base probabilities for phredscores up to 50
     base_prob_precompute = {}
-    for score in range(1, 51):
-        base_prob_precompute[score] = base_prob(score)
+    for letter in phred_dict:
+        base_prob_precompute[letter] = base_prob(phred_dict[letter])
+
+    # Convert index qual argument to a qual character
+    args.indexQual = chr(args.indexQual + args.phredOffset)
 
     # Check that the multiplexed path exists
     multiplexed_dir = os.path.join(args.inDir, "multiplexed")
@@ -42,7 +48,7 @@ def run(args):
 
     # Initiate sample sheet and read possible indexes
     sampleSheet = SampleSheet(args.sampleSheet)
-    sampleSheet.parse(args.indexQual)
+    sampleSheet.parse(args.indexQual, base_prob_precompute)
 
     # Check that there are the same number of indexes in sample sheet and
     # multiplexed fastqs
@@ -58,8 +64,9 @@ def run(args):
 
     # Version that doesnt use concurrent.futures
     c = 1
-    for variables in futures_iterate_reads(multiplexed, sampleSheet,
-                                           base_prob_precompute, args.minProb):
+    for variables in futures_iterate_reads(base_prob_precompute,
+            multiplexed, sampleSheet, args.minProb):
+
         output = futures_barcode_to_indexes(variables)
         # Unpack output
         ((read_records, barcode_records), sample, prob, _) = output
@@ -69,6 +76,12 @@ def run(args):
         if c % 1000 == 0:
             print(c)
         c += 1
+
+    # Close all sample handles
+    for sample_name in sample_out:
+        sample_out[sample_name].close_handles()
+
+
 
 
     """
@@ -92,37 +105,35 @@ def run(args):
 
     return 0
 
-def futures_iterate_reads(multiplexed, sampleSheet, base_prob_precompute,
+def futures_iterate_reads(base_prob_precompute, multiplexed, sampleSheet,
                           min_prob):
     """ Returns an iterator that contains everything needed for futures.
     """
-    for combined_record in multiplexed.iterate():
-        yield (combined_record, sampleSheet, base_prob_precompute, min_prob)
+    for combined_record in multiplexed.iterate(base_prob_precompute):
+        yield (combined_record, sampleSheet, min_prob)
 
 def futures_barcode_to_indexes(variables):
     """ Compares the reads barcodes to sample indexes and returns matching
         sample name.
     """
     # Unpack variables
-    (combined_record, sampleSheet,
-     base_prob_precompute, min_prob) = variables
+    (combined_record, sampleSheet, min_prob) = variables
     # Get barcode records
     _, barcode_records = combined_record
     # Find sample
     b1_header, sample, prob = match_barcode_to_indexes(barcode_records,
-        sampleSheet, base_prob_precompute, min_prob)
+        sampleSheet, min_prob)
     if sample == None:
         sample = 'not_assigned'
     # Append probability to barcode1 header
-    b1_header = "{0}_{1}".format(b1_header, prob)
+    b1_header = "{0} {1}".format(b1_header, prob)
     # Change header
     combined_record[1][0].id = b1_header
 
     return combined_record, sample, prob, b1_header
 
 
-def match_barcode_to_indexes(barcode_records, sampleSheet, base_prob_precompute,
-                             min_prob):
+def match_barcode_to_indexes(barcode_records, sampleSheet, min_prob):
     """ For the barcode pair, caluclates probability of a match against each set
         of indexes
     """
@@ -135,20 +146,18 @@ def match_barcode_to_indexes(barcode_records, sampleSheet, base_prob_precompute,
 
         # Calculate the match probability for barcode 1
         b1_prob = sequences_match_prob(index_records[0].seq,
-            index_records[0].letter_annotations['phred_quality'],
+            index_records[0].qual_prob,
             barcode_records[0].seq,
-            barcode_records[0].letter_annotations['phred_quality'],
-            base_prob_precompute, 0)
+            barcode_records[0].qual_prob, 0)
 
         # Do for second barcode if present
         if sampleSheet.is_dualindexed:
             # Skip if already below the threshold, else assign same prob as b1
             if b1_prob >= min_prob:
                 b2_prob = sequences_match_prob(index_records[1].seq,
-                           index_records[1].letter_annotations['phred_quality'],
+                           index_records[1].qual_prob,
                            barcode_records[1].seq,
-                           barcode_records[1].letter_annotations['phred_quality'],
-                           base_prob_precompute, 0)
+                           barcode_records[1].qual_prob, 0)
             else:
                 b2_prob = b1_prob
 
@@ -157,9 +166,10 @@ def match_barcode_to_indexes(barcode_records, sampleSheet, base_prob_precompute,
             overall_prob = b1_prob * b2_prob
         else:
             overall_prob = b1_prob
-
+        # Save result
         index_probs[sample_name] = overall_prob
 
+    # Sort the results by their probability
     sorted_probs = sorted(index_probs.items(), key=itemgetter(1),
                           reverse=True)
 
@@ -202,9 +212,9 @@ class Sample:
     def open_handles(self):
         """ For the reads and barcodes, opens output handles.
         """
-        self.read_handles = [get_handle(read_path, 'wt') for read_path
+        self.read_handles = [get_handle(read_path, 'w') for read_path
                              in self.read_paths]
-        self.barcode_handles = [get_handle(barcode_path, 'wt') for barcode_path
+        self.barcode_handles = [get_handle(barcode_path, 'w') for barcode_path
                                 in self.barcode_paths]
         return 0
 
@@ -216,13 +226,13 @@ class Sample:
             self.open_handles()
         # Write read records
         for i in range(len(read_records)):
-            SeqIO.write(read_records[i], self.read_handles[i], "fastq")
+            fastqWriter(read_records[i], self.read_handles[i])
         # Write barcode records
         for i in range(len(barcode_records)):
-            SeqIO.write(barcode_records[i], self.barcode_handles[i], "fastq")
+            fastqWriter(barcode_records[i], self.barcode_handles[i])
         return 0
 
-    def close_handles():
+    def close_handles(self):
         """ Closes any open handles.
         """
         if self.read_handles != None:
@@ -236,7 +246,7 @@ class SampleSheet:
     def __init__(self, path):
         self.path = path
 
-    def parse(self, index_qual):
+    def parse(self, index_qual, base_prob_precompute):
         """ Parses the sample sheet to retrieve the indexes for each sample.
         """
         sample_indexes = {}
@@ -270,12 +280,13 @@ class SampleSheet:
                 sample_indexes[sample_name].append(index2)
         
         # Convert indexes to seqIO seqRecords
-        self.sample_indexes = self.convert_index_to_seqRecord(sample_indexes,
-            index_qual)
+        self.sample_indexes = self.convert_index_to_fastqRecord(sample_indexes,
+            index_qual, base_prob_precompute)
 
         return 0
 
-    def convert_index_to_seqRecord(self, sample_indexes, index_qual):
+    def convert_index_to_fastqRecord(self, sample_indexes, index_qual,
+                                     base_prob_precompute):
         """ Converts each index sequence to a seqIO seqRecord.
         """
         # For each sample
@@ -283,12 +294,13 @@ class SampleSheet:
             # For each index
             for i in range(len(sample_indexes[sample])):
                 raw_seq = sample_indexes[sample][i]
-                # Convert to seqRecord
-                sample_indexes[sample][i] = SeqRecord(
-                    Seq(raw_seq, SingleLetterAlphabet()))
-                # Add quality information
-                sample_indexes[sample][i].letter_annotations['phred_quality'] \
-                    = [index_qual] * len(raw_seq)
+                qual = [index_qual] * len(raw_seq)
+                # Convert to fastqRecord
+                record = Fastq(None, raw_seq, qual)
+                # Calculate base probabilities
+                record.qual_to_prob(base_prob_precompute)
+                # Save record
+                sample_indexes[sample][i] = record
         return sample_indexes
 
 class Multiplex:
@@ -332,23 +344,23 @@ class Multiplex:
                            in self.barcode_paths]
         return read_handles, barcode_handles
 
-    def open_seqIO_iterators(self, read_handles, barcode_handles):
+    def open_iterators(self, read_handles, barcode_handles):
         """ Opens fastq iterators using biopythons SeqIO
         """
         # Open iterators for each handle
-        read_iterators = [SeqIO.parse(handle, "fastq") for handle
+        read_iterators = [fastqIterator(handle) for handle
                           in read_handles]
-        barcode_iterators = [SeqIO.parse(handle, "fastq") for handle
+        barcode_iterators = [fastqIterator(handle) for handle
                              in barcode_handles]
         return read_iterators, barcode_iterators
 
-    def iterate(self):
+    def iterate(self, base_prob_precompute):
         """ Loads the reads and barcode fastqs and yields 1 set at a time.
         """
         # Open handles
         read_handles, barcode_handles = self.open_handles()
         # Open iterators for each handle
-        read_iterators, barcode_iterators = self.open_seqIO_iterators(
+        read_iterators, barcode_iterators = self.open_iterators(
             read_handles, barcode_handles)
 
         # Iterate through records
@@ -368,6 +380,11 @@ class Multiplex:
             if len(set(titles)) > 1:
                 sys.exit('Reads and/or barcodes are not in sync\n'
                          '{0}'.format(titles))
+
+            # Calculate base probabilities for barcodes
+            for i in range(len(barcode_records)):
+                barcode_records[i].qual_to_prob(base_prob_precompute)
+
 
             yield [read_records, barcode_records]
 
