@@ -36,7 +36,17 @@ The aware.py sub-commands include:
 
 To see further help for each sub-command use `pypy3 aware.py <subcommand> -h`.
 
-View full list of arguments using `python 1_run_IlluminaBasecallsToFastq.py --help`
+### Sub-command: bcl2fastq
+
+`bcl2fastq` extracts read and barcode fastq files from Illumina .bcl files.
+
+```
+usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
+                                [--readsPerTile <int>] [--MaxInRam <int>]
+                                [--JavaRAM <int>] [--PicardJar <path>]
+                                <baseCallDir> <runParameters.xml> <lane>
+```
+
 
 ##### Required
 - `--BaseCallDir` - `MiSeqOutput/Data/Intensities/BaseCalls` directory containing BCL files.
