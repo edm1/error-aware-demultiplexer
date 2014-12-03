@@ -71,13 +71,13 @@ def run(args):
            'NUM_PROCESSORS={0}'.format(args.numCPU),
            'MAX_READS_IN_RAM_PER_TILE={0}'.format(args.readsPerTile),
            'MAX_RECORDS_IN_RAM={0}'.format(args.MaxInRam),
-           #'COMPRESS_OUTPUTS=true',
+           'COMPRESS_OUTPUTS=true',
            
            # The below options should be uncommented for debugging as we do
            # not need all reads to be extracted. Compressed files do not work
            # if a tile limit is used
-           'COMPRESS_OUTPUTS=false',
-           'TILE_LIMIT=1' ,
+           #'COMPRESS_OUTPUTS=false',
+           #'TILE_LIMIT=1' ,
            #'VERBOSITY=DEBUG'
           ]
 
