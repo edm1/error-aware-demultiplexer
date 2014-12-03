@@ -16,7 +16,7 @@ indexed reads, and single or pair-end reads.
 The repository can be downloaded using git `git clone https://github.com/edm1/aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
 
 #### Recommended
-- [PyPy3 2.4.0](http://pypy.org/)
+- [PyPy3](http://pypy.org/) (>=2.4.0)
 
 Using pypy3 instead of python3 will give approximately 3x speed up.
 
@@ -87,3 +87,7 @@ usage: pypy3 aware.py demux [-h] [--uniqID <str>] [--minProb <float>]
 ## Acknowledgements
 
 The Broad Institutes [Picard tool](github.com/broadinstitute/picard) is used to extract FASTQs from Illumina BCL files.
+
+## License
+
+
