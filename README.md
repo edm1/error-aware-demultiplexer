@@ -1,11 +1,12 @@
 aware demultiplexer
 ===================
 
-Illumina demultiplexer that incorporates barcode phred scores to prevent misassignment of reads. The current implementation works with MiSeq **single-end or pair-end and single- or dual-indexed** sequencing. It has not been tested with other Illumina platforms.
-
 Current version: v0.9.1
 
-### Dependancies
+Probabilistic demultiplexer for Illumina bcl files. Works with single or dual-
+indexed reads, and single or pair-end reads.
+
+#### Dependancies
 - Python (>=3.2)
 - Biopython
 - Java Runtime Environment (tested with openjdk-7-jre and Java SE Runtime Env 1.8)

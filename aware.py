@@ -35,11 +35,21 @@ def parse_arguments(root_dir):
     """
 
     # Create top level parser. TODO: add description, usage, etc
-    parser = argparse.ArgumentParser('main')
-    subparsers = parser.add_subparsers()
+    parser = argparse.ArgumentParser(prog="aware.py",
+        description="Probabilistic demultiplexer for Illumina bcl files. Works "
+                    "with single or dual-indexed reads, and single or pair-"
+                    "end reads. (github.com/edm1/aware-demultiplexer)",
+        epilog="Enter sub-command to see specific options.",
+        usage="pypy3 aware.py [-h] [-v] <subcommand> [options]")
+    subparsers = parser.add_subparsers(title="The aware.py sub-commands include",
+        prog="pypy3 aware.py",
+        metavar="<subcommand>")
 
     # Create parser for the bcl2fastq (extracting reads from illumina folder)
-    parser_b2f = subparsers.add_parser('bcl2fastq')
+    parser_b2f = subparsers.add_parser('bcl2fastq',
+        description="Wrapper for picard-tools. Extracts multiplexed reads and "
+                    "barcodes from Illumina bcl files.",
+        help="Extracts multiplexed reads and barcodes from Illumina bcl files.")
     # Required positional arguments
     parser_b2f.add_argument('baseCallDir', metavar='<baseCallDir>', type=str,
         help='Directory containing base call intensitites')
@@ -68,7 +78,11 @@ def parse_arguments(root_dir):
     parser_b2f.set_defaults(func=basecalls2fastq.run)
     
     # Create parser for the demultiplexer
-    parser_demux = subparsers.add_parser('demux')
+    parser_demux = subparsers.add_parser('demux',
+        description="Demultiplexes multiplexed fastqs that are extracted "
+                    "by sub-command bcl2fastq.",
+        help="Demultiplex the fastqs extracted by bcl2fastq using indexes "
+             "provided in sampleSheet.csv.")
     # Required positional args
     parser_demux.add_argument('inDir', metavar='<inDir>',
         type=str, help='Directory created by bcl2fastq in output folder.')
@@ -77,8 +91,8 @@ def parse_arguments(root_dir):
     # Optional args
     parser_demux.add_argument('--uniqID', '-u', metavar='<str>', type=str,
         default=None, help='Unique ID to append to output folder. (None)')
-    parser_demux.add_argument('--numCPU', '-p', metavar='<int>', type=int,
-        default=1, help='Number of CPUs to use. (1)')
+    # parser_demux.add_argument('--numCPU', '-p', metavar='<int>', type=int,
+    #     default=1, help='Number of CPUs to use. (1)')
     parser_demux.add_argument('--minProb', '-min', metavar='<float>',
         type=float, default=0.05, help=('Minimum probability of a match else'
                                         ' discard. (0.05)'))
@@ -90,7 +104,7 @@ def parse_arguments(root_dir):
     parser_demux.set_defaults(func=demultiplexer.run)
 
     # Add version number to the parser
-    parser.add_argument('-v', '--version', action='version', version='v0.9.0')
+    parser.add_argument('-v', '--version', action='version', version='v0.9.1')
 
     # Parse the arguments
     args = parser.parse_args()
