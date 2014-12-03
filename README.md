@@ -86,7 +86,7 @@ usage: pypy3 aware.py demux [-h] [--uniqID <str>] [--minProb <float>]
 
 ## Acknowledgements
 
-The Broad Institutes [Picard tool](github.com/broadinstitute/picard) is used to extract FASTQs from Illumina BCL files.
+The Broad Institutes [Picard tool](github.com/broadinstitute/picard) is used to extract FASTQs from Illumina BCL files. I have redistributed it unchanged in `./libs/picard.jar`.
 
 ## License
 
