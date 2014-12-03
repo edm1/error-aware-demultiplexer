@@ -54,26 +54,12 @@ usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
 - `<lane>` - Lane number
 
 ##### Optional
-- `--JarLoc` - Location of IlluminaBasecallsToFastq.jar (../lib/picard-tools-1.115/IlluminaBasecallsToFastq.jar)
+- `--outDir` - Location to create output files. (./output)
 - `--numCPU` - Number of CPUs to use. (1)
 - `--readsPerTile` - Max number of reads in RAM per tile, reduce if you have problems with memory. (120000)
+- `--MaxInRam` - Maximum number of records that are stored in the RAM. (500000)
 - `--JavaRAM` - Amount of RAM allocated to Java heap. Increase if having problems. (2)
-
-##### Determining read structure
-Read structure can be determined from the `runParameters.xml` file. Go to the section between the `<Reads> ... </Reads>` tags. It will look something like this:
-
-```
-<Reads>
-  <RunInfoRead Number="1" NumCycles="300" IsIndexedRead="N"/>
-  <RunInfoRead Number="2" NumCycles="8" IsIndexedRead="Y"/>
-  <RunInfoRead Number="3" NumCycles="8" IsIndexedRead="Y"/>
-</Reads>
-```
-T denontes read template and B denotes a barcode/indexed read. In the above example for single-end dual-indexed reads, the read structure would be 300T8B8B.
-
-
-### Output
-This script will extract FASTQs from the BCL files and output them to `temp/<run id>`
+- `--JarLoc` - Location of picard.jar (./libs/picard.jar)
 
 ### Troubleshooting
 If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `InterOp` needs to be present in addition to `Data/Intensities/BaseCalls`.
