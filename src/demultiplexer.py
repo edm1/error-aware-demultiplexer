@@ -29,6 +29,7 @@ from src.fastqparser import phred_score_dict
 from src.fastqparser import fastqIterator
 from src.fastqparser import Fastq
 from src.fastqparser import fastqWriter
+from src.progressbar import Bar
 from operator import itemgetter
 from shutil import rmtree
 import glob
@@ -82,6 +83,10 @@ def run(args):
         sample_out[sample] = Sample(sample, out_dir, multiplexed.is_pairend,
                                     multiplexed.is_dualindexed)
 
+    # Initiate progress bar
+    num_records = file_len(multiplexed.barcode_paths[0]) / 4
+    bar = Bar('Demultiplexing', max=int(num_records/10000))
+
     # Version that doesnt use concurrent.futures
     c = 1
     for variables in futures_iterate_reads(base_prob_precompute,
@@ -93,9 +98,12 @@ def run(args):
         # Write record to correct sample file
         sample_out[sample].write(read_records, barcode_records)
         # Update progress
-        if c % 1000 == 0:
-            print(c)
+        if c % 10000 == 0:
+            bar.next()
         c += 1
+
+    # Close progress bar
+    bar.finish()
 
     # Close all sample handles
     for sample_name in sample_out:
@@ -423,7 +431,6 @@ def create_folder(folder):
     os.makedirs(folder)
     return folder
 
-
 def get_handle(filen, rw):
     """ Returns file handle using gzip if file ends in .gz
     """
@@ -431,3 +438,11 @@ def get_handle(filen, rw):
         return gzip.open(filen, rw)
     else:
         return open(filen, rw)
+
+def file_len(fname):
+    """ Count number of lines in a file.
+    """
+    with get_handle(fname, 'r') as f:
+        for i, l in enumerate(f):
+            pass
+    return i + 1
