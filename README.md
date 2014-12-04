@@ -1,4 +1,4 @@
-aware demultiplexer
+Aware demultiplexer
 ===================
 
 Current version: v1.0.0
