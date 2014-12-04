@@ -18,7 +18,7 @@ The repository can be downloaded using `git clone https://github.com/edm1/aware-
 #### Recommended
 - [PyPy3](http://pypy.org/) (>=2.4.0)
 
-Using pypy3 instead of python3 will give approximately 3x speed up.
+Using pypy3 instead of python3 will give approximately 3x speed up. If you do not have pypy3 installed, it can be installed using `python extras/install_pypy3-2.4.0.py`.
 
 ## Usage
 
