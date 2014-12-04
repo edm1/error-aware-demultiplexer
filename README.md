@@ -1,139 +1,90 @@
-Aware demultiplexer
-===================
+phred-aware-illumina-demultiplexer
+==================================
 
-Current version: v1.0.0
+Illumina demultiplexer that incorporates barcode phred scores to prevent misassignment of reads. The current implementation works with MiSeq **single-end or pair-end and single- or dual-indexed** sequencing. It has not been tested with other Illumina platforms.
 
-Probabilistic demultiplexer for Illumina bcl files. Works with single or dual-
-indexed reads, and single or pair-end reads.
+Current version: v0.3
 
-## Setup
-
-#### Dependancies
-- Python (>=3.2)
+### Dependancies
+- Python v2.7
 - Java Runtime Environment (tested with openjdk-7-jre and Java SE Runtime Env 1.8)
+- [Picard](https://github.com/broadinstitute/picard/releases/latest) is required to convert Illumina BCL files to FASTQs. Picard utilities can be downloaded using `$ python scripts/install_picard-tools.py`. If installed manually, then the path to *picard.jar* must be provided using `--JarLoc`. Tested with picard version 1.125.
 
-#### Download
-The repository can be downloaded using `git clone https://github.com/edm1/aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
+### Recommended
+The current python implementation is not very fast. Things run ~2X faster if [pypy](http://pypy.org/) is used in place of the python interpretor.
 
-#### Recommended
-- [PyPy3](http://pypy.org/) (>=2.4.0)
+### Download
+The repository can be downloaded using git `git clone https://github.com/edm1/phred-aware-illumina-demultiplexer.git` or by following the *Download ZIP* link on the right.
 
-Using pypy3 instead of python3 will give approximately 3x speed up. If you do not have pypy3 installed, it can be installed using `python extras/install_pypy3-2.4.0.py`.
-
-## Usage
-
-The script is split into two sub-commands `bcl2fastq` and `demux`.
+## Step 1: Convert Illumina BCL to FASTQ
+The script `1_run_IlluminaBasecallsToFastq.py` is used as a wrapper to run Picard's *IlluminaBasecallsToFastq.jar* module. Run using:
 
 ```
-usage: pypy3 aware.py [-h] [-v] <subcommand> [options]
-
-The aware.py sub-commands include:
-    bcl2fastq    Extracts multiplexed reads and barcodes from Illumina bcl
-                 files.
-    demux        Demultiplex the fastqs extracted by bcl2fastq using indexes
-                 provided in sampleSheet.csv.
-```
-
-To see further help for each sub-command use `pypy3 aware.py <subcommand> -h`.
-
-#### Sub-command: bcl2fastq
-
-`bcl2fastq` extracts read and barcode fastq files from Illumina .bcl files.
+python [or pypy] 1_run_IlluminaBasecallsToFastq.py [-h] --BaseCallDir <dir>
+                                                        --RunParamXML <runParameters.xml>
+                                                        --Lane <int> --ReadStructure <str>
+                                                        [--JarLoc <*.jar>] [--numCPU <int>]
+                                                        [--readsPerTile <int>]
+                                                        [--MaxInRam <int>] [--JavaRAM <int>]
 
 ```
-usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
-                                [--readsPerTile <int>] [--MaxInRam <int>]
-                                [--JavaRAM <int>] [--PicardJar <path>]
-                                <baseCallDir> <runParameters.xml> <lane>
-```
 
+View full list of arguments using `python 1_run_IlluminaBasecallsToFastq.py --help`
 
 ##### Required
-- `<baseCallDir>` - `MiSeqOutput/Data/Intensities/BaseCalls` directory containing BCL files.
-- `<runParameters.xml>` - `MiSeqOutput/runParameters.xml` file.
-- `<lane>` - Lane number
+- `--BaseCallDir` - `MiSeqOutput/Data/Intensities/BaseCalls` directory containing BCL files.
+- `--RunParamXML` - `runParameters.xml` file from the MiSeqOutput directory.
+- `--ReadStructure` - Read structure ([as described here](http://picard.sourceforge.net/command-line-overview.shtml#IlluminaBasecallsToFastq)). For example, for MiSeq single-end dual-indexed sequencing with reads of length 151, the read structure is `151T8B8B` (151 cycles of template, 8 cycles of barcode, 8 cycles of barcode).
+- `--Lane` - Lane number
 
 ##### Optional
-- `--outDir` - Location to create output files. (./output)
+- `--JarLoc` - Location of IlluminaBasecallsToFastq.jar (../lib/picard-tools-1.115/IlluminaBasecallsToFastq.jar)
 - `--numCPU` - Number of CPUs to use. (1)
 - `--readsPerTile` - Max number of reads in RAM per tile, reduce if you have problems with memory. (120000)
-- `--MaxInRam` - Maximum number of records that are stored in the RAM. (500000)
 - `--JavaRAM` - Amount of RAM allocated to Java heap. Increase if having problems. (2)
-- `--JarLoc` - Location of picard.jar (./libs/picard.jar)
 
-##### Troubleshooting
-If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `MiSeqOutput/InterOp` needs to be present in addition to `MiSeqOutput/Data/Intensities/BaseCalls`.
-
-#### Sub-command: demux
-
-Using index sequences provided in sampleSheet.csv, it will demultiplex the fastqs extracted by bcl2fastq.
+##### Determining read structure
+Read structure can be determined from the `runParameters.xml` file. Go to the section between the `<Reads> ... </Reads>` tags. It will look something like this:
 
 ```
-usage: pypy3 aware.py demux [-h] [--uniqID <str>] [--minProb <float>]
-                            [--phredOffset <int>] [--indexQual <int>]
-                            <inDir> <SampleSheet.csv>
+<Reads>
+  <RunInfoRead Number="1" NumCycles="300" IsIndexedRead="N"/>
+  <RunInfoRead Number="2" NumCycles="8" IsIndexedRead="Y"/>
+  <RunInfoRead Number="3" NumCycles="8" IsIndexedRead="Y"/>
+</Reads>
+```
+T denontes read template and B denotes a barcode/indexed read. In the above example for single-end dual-indexed reads, the read structure would be 300T8B8B.
+
+
+### Output
+This script will extract FASTQs from the BCL files and output them to `temp/<run id>`
+
+### Troubleshooting
+If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `InterOp` needs to be present in addition to `Data/Intensities/BaseCalls`.
+
+## Step 2: Demultiplex FASTQs into separate sample files
+Barcodes are checked against sample indexes. The probability that the two underlaying sequences (barcode and index) are the same is calculated using the phred quality scores. I.e. the probability that the true bases match given that the sequenced bases match/mismatch is calculated across the index/barcode. Script is run using:
+
+```
+python [or pypy] 2_demultiplex_fastqs.py [-h] --InputTempDir <dir> --SampleSheet
+                                              <SampleSheet.csv> --OutID <str>
+                                              [--ResultsDir <dir>] [--MinProb <float>]
+                                              [--PhredOffset <int>] [--IndexQual <int>]
+
 ```
 
 ##### Required
-- `<inDir>` - Directory containing `multiplexed` folder output by bcl2fastq.
-- `<sampleSheet.csv>` - MiSeq SampleSheet.csv file containing barcode indexes and sample names.
+- `--InputTempDir` - Directory containing temp files output by 1_run_IlluminaBasecallsToFastq.py
+- `--SampleSheet` - MiSeq output SampleSheet.csv file containing barcode indexes and sample names.
+- `--OutID` - Unique ID to append to the output folder name.
 
 ##### Optional
-- `--uniqID` - Unique ID to append to output folder. Useful if testing multiple parameters. (None)
-- `--minProb` - Minimum overall probability that a barcode and index match, else sample = "not_assigned". (0.05)
-- `--phredOffset` - FASTQ phred score offset. (33)
-- `--indexQual` - Phred-score given to all bases in index sequence. (30)
+- `--MinProb` - Minimum probability of a match, else discard. (0.05)
+- `--IndexQual` - Phred-score given to index sequence. (30)
+- `--OutDir` - Results directory. (default: ./results)
+- `--PhredOffset` - FASTQ phred score offset. (33)
 
-## Acknowledgements
-
-The Broad Institutes [Picard tool](github.com/broadinstitute/picard) is used to extract FASTQs from Illumina BCL files. I have redistributed it unchanged in `./libs/picard.jar`.
-
-## License
-
-```
-The MIT License (MIT)
-
-Copyright (c) 2014 Edward Mountjoy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-The function src.fastqparser.fastqIterator was adpated from the biopython source.
-
-```
-Biopython License Agreement
-
-Permission to use, copy, modify, and distribute this software and its
-documentation with or without modifications and for any purpose and
-without fee is hereby granted, provided that any copyright notices
-appear in all copies and that both those copyright notices and this
-permission notice appear in supporting documentation, and that the
-names of the contributors or copyright holders not be used in
-advertising or publicity pertaining to distribution of the software
-without specific prior permission.
-
-THE CONTRIBUTORS AND COPYRIGHT HOLDERS OF THIS SOFTWARE DISCLAIM ALL
-WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL THE
-CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY SPECIAL, INDIRECT
-OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
-OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
-OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE
-OR PERFORMANCE OF THIS SOFTWARE.
-```
+### Output
+For each of the sample indexes + not-assigned reads, the script outputs:
+1. FASTQs for the demultiplexed reads
+2. FASTQs containing the barcodes of each of the reads
