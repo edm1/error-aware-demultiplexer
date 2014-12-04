@@ -21,6 +21,8 @@
 from sys import stderr
 from time import time
 from collections import deque
+from math import ceil
+from datetime import timedelta
 
 
 HIDE_CURSOR = '\x1b[?25l'

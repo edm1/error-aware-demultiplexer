@@ -31,6 +31,7 @@ from src.fastqparser import Fastq
 from src.fastqparser import fastqWriter
 from src.progressbar import Bar
 from operator import itemgetter
+from datetime import timedelta
 from shutil import rmtree
 import glob
 import gzip
@@ -39,6 +40,8 @@ import os
 #import concurrent.futures as cf
 
 def run(args):
+
+    print("Precomputing base probabilities...")
 
     # Precompute string to phred scores dictionary
     phred_dict = phred_score_dict(args.phredOffset)
@@ -50,6 +53,8 @@ def run(args):
 
     # Convert index qual argument to a qual character
     args.indexQual = chr(args.indexQual + args.phredOffset)
+
+    print("Searching for fastqs...")
 
     # Check that the multiplexed path exists
     multiplexed_dir = os.path.join(args.inDir, "multiplexed")
@@ -67,6 +72,8 @@ def run(args):
     # Initiate multiplexed class
     multiplexed = Multiplex(multiplexed_dir)
 
+    print("Loading index sequences...")
+
     # Initiate sample sheet and read possible indexes
     sampleSheet = SampleSheet(args.sampleSheet)
     sampleSheet.parse(args.indexQual, base_prob_precompute)
@@ -77,6 +84,8 @@ def run(args):
         sys.exit("Error: Different number of indexes in sampleSheet and "
                  "multiplexed reads. Exiting!")
 
+    print("Initiating...")
+
     # Open output class for each sample, and a not_assigned group
     sample_out = {}
     for sample in list(sampleSheet.sample_indexes.keys()) + ['not_assigned']:
@@ -85,13 +94,13 @@ def run(args):
 
     # Initiate progress bar
     num_records = file_len(multiplexed.barcode_paths[0]) / 4
-    bar = Bar('Demultiplexing', max=int(num_records/10000))
+    bar = Bar('Demultiplexing', max=int(num_records/10000),
+              suffix='%(percent)d%% %(eta)a secs')
 
-    # Version that doesnt use concurrent.futures
     c = 1
     for variables in futures_iterate_reads(base_prob_precompute,
             multiplexed, sampleSheet, args.minProb):
-
+        # Get output
         output = futures_barcode_to_indexes(variables)
         # Unpack output
         ((read_records, barcode_records), sample, prob, _) = output
@@ -108,6 +117,8 @@ def run(args):
     # Close all sample handles
     for sample_name in sample_out:
         sample_out[sample_name].close_handles()
+
+    print("Finished!")
 
     """
     # Send each read/barcode record to futures to match up to sample

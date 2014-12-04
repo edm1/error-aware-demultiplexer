@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # The MIT License (MIT)
@@ -71,7 +70,7 @@ def fastqIterator(handle):
 
     # Skip any text before the first record (e.g. blank lines, comments?)
     while True:
-        line = handle_readline()
+        line = handle_readline().decode("utf-8")
         if not line:
             return  # Premature end of file, or just empty?
         if line[0] == "@":
@@ -87,10 +86,10 @@ def fastqIterator(handle):
         # Will now be at least one line of quality data - in most FASTQ files
         # just one line! We therefore use string concatenation (if needed)
         # rather using than the "".join(...) trick just in case it is multiline:
-        seq_string = handle_readline().rstrip()
+        seq_string = handle_readline().decode("utf-8").rstrip()
         # There may now be more sequence lines, or the "+" quality marker line:
         while True:
-            line = handle_readline()
+            line = handle_readline().decode("utf-8")
             if not line:
                 raise ValueError("End of file without quality information.")
             if line[0] == "+":
@@ -107,10 +106,10 @@ def fastqIterator(handle):
         seq_len = len(seq_string)
 
         # Will now be at least one line of quality data...
-        quality_string = handle_readline().rstrip()
+        quality_string = handle_readline().decode("utf-8").rstrip()
         # There may now be more quality data, or another sequence, or EOF
         while True:
-            line = handle_readline()
+            line = handle_readline().decode("utf-8")
             if not line:
                 break  # end of file
             if line[0] == "@":
