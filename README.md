@@ -3,8 +3,9 @@ Aware demultiplexer
 
 Current version: v1.0.0
 
-Probabilistic demultiplexer for Illumina bcl files. Works with single or dual-
-indexed reads, and single or pair-end reads.
+Probabilistic demultiplexer for Illumina BCL files. Works with:
+- single or dual-indexed reads
+- single or pair-end reads
 
 ## Setup
 
