@@ -412,7 +412,7 @@ class Multiplex:
                 barcode_records.append(next(barcode_iterators[1]))
 
             # Check that they all have the same title
-            titles = [record.id for record in read_records + barcode_records]
+            titles = [record.id.split(" ")[0] for record in read_records + barcode_records]
             if len(set(titles)) > 1:
                 sys.exit('Reads and/or barcodes are not in sync\n'
                          '{0}'.format(titles))

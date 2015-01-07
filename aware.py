@@ -122,7 +122,7 @@ def parse_arguments(root_dir):
     parser_demux.set_defaults(func=demultiplexer.run)
 
     # Add version number to the parser
-    parser.add_argument('-v', '--version', action='version', version='v1.0.0')
+    parser.add_argument('-v', '--version', action='version', version='v1.0.1')
 
     # Parse the arguments
     args = parser.parse_args()
