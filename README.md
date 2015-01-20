@@ -69,12 +69,14 @@ If you get the error "Could not find a format with available files for the follo
 MiSeqAnalysis
 ├── Config
 ├── Data
-│   ├── Intensities
-│   │   ├── BaseCalls -- *
-│   │   ├── L001 ------- *
-│   │   └── Offsets
-│   ├── RTA Logs
-│   └── Tile Status
+│   ├── Intensities
+│   │   ├──  BaseCalls -- *
+│   │   ├──  L001 ------- *
+│   │   ├── [L002] ------ *
+│   │   ├── [L...] ------ *
+│   │   └──  Offsets
+│   ├── RTA Logs
+│   └── Tile Status
 ├── Images
 ├── InterOp ------------ *
 ├── Logs
