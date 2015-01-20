@@ -71,7 +71,7 @@ MiSeqAnalysis
 ├── Data
 │   ├── Intensities
 │   │   ├── BaseCalls -- *
-│   │   ├── L001
+│   │   ├── L001 ------- *
 │   │   └── Offsets
 │   ├── RTA Logs
 │   └── Tile Status
