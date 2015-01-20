@@ -63,7 +63,7 @@ usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
 - `--JarLoc` - Location of picard.jar (./libs/picard.jar)
 
 ##### Troubleshooting
-If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `MiSeqAnalysis/InterOp` needs to be present in addition to `MiSeqAnalysis/Data/Intensities/BaseCalls`. I.e. the following (*) folders/files are required:
+If you get the error "Could not find a format with available files for the following data types: Position", it is because the folder `MiSeqAnalysis/InterOp` needs to be present in addition to `MiSeqAnalysis/Data/Intensities/BaseCalls`. I.e. the following starred (*) folders/files are required:
 
 ```
 MiSeqAnalysis
