@@ -313,7 +313,7 @@ class SampleSheet:
                 # Get second index
                 if self.is_dualindexed:
                     index2 = parts[col_ind['index2']]
-                sample_indexes[sample_name].append(index2)
+                    sample_indexes[sample_name].append(index2)
         
         # Convert indexes to seqIO seqRecords
         self.sample_indexes = self.convert_index_to_fastqRecord(sample_indexes,
