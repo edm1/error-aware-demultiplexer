@@ -25,7 +25,7 @@ def main():
             cellline = os.path.split(cellline_path)[1]
             # Get name of fastq
             in_fastq = glob.glob(os.path.join(cellline_path,
-                                              "*.subset.fastq.gz"))[0]
+                                              "*.R1.fastq.gz"))[0]
             # Parse fastq
             with gzip.open(in_fastq, "r") as in_h:
                 for line in in_h:
