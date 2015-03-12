@@ -7,4 +7,4 @@ for filen in $fastain; do
 	idx=${idx%%.gz}
 	outname="$outpref"_chunck-"$idx".xml.gz
 	echo "gzcat $filen | blastn -db $db -outfmt 5 -num_alignments 2 | gzip -c > $outname "
-done | parallel --pipe -j 4 bash
+done | parallel --will-cite --pipe -j 2 bash
