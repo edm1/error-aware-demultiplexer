@@ -15,12 +15,12 @@ def main():
 
     # Get run name
     runname = os.path.split(demux_dir)[1]
-    outname = "{0}_assingments.tsv".format(runname)
+    outname = "{0}_assingments.tsv.gz".format(runname)
 
     # Get list of cell line folders
     cellline_folders = glob.glob(os.path.join(demux_dir, "*"))
 
-    with open(outname, "w") as out_h:
+    with gzip.open(outname, "w") as out_h:
         for cellline_path in cellline_folders:
             cellline = os.path.split(cellline_path)[1]
             # Get name of fastq
