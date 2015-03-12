@@ -9,7 +9,7 @@ def main():
 
     in_fasta = "1out_raw-reads.fasta.gz"
     out_pref = "2out_raw-reads_chunck-"
-    num_chuncks = 8
+    num_chuncks = 100
 
     # Count seqs
     print("Counting seqs")
