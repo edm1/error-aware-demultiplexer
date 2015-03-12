@@ -9,20 +9,24 @@ def main():
 
     in_fasta = "1out_raw-reads.fasta.gz"
     out_pref = "2out_raw-reads_chunck-"
-    num_chuncks = 4
+    num_chuncks = 8
 
     # Count seqs
+    print("Counting seqs")
     total_seqs = count_num_seqs(in_fasta)
     per_chuck = int(total_seqs / num_chuncks) + 1
     lines_per_file = per_chuck * 2
 
     # Use split command
+    print("Starting split...")
     cmd = "gzcat {1} | split -l {0} - {2}".format(lines_per_file, in_fasta, out_pref)
     subprocess.call(cmd, shell=True)
 
     # Gzip all chuncks
     cmd = "gzip {0}*".format(out_pref)
     subprocess.call(cmd, shell=True)
+
+    print("Done!")
 
     return 0
 
