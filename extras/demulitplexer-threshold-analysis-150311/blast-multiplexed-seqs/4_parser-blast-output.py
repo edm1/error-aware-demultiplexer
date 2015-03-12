@@ -10,10 +10,10 @@ import gzip
 def main():
 
     in_xml_pattern = "3out_blast-output_chunck-*.xml.gz"
-    out_name = "4out_blast-output-parsed.tsv"
+    out_name = "4out_blast-output-parsed.tsv.gz"
 
     # Open out handle
-    with open(out_name, "w") as out_h:
+    with gzip.open(out_name, "w") as out_h:
 
         # Write header
         line = ["query", "best_hit", "best_score", "next_best_score"]
