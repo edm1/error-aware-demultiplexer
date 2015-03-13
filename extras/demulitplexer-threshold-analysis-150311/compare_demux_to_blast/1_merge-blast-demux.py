@@ -11,8 +11,10 @@ import os
 def main():
 
     # Options
-    in_demux = "../parse-demux-assignments/demultiplexed_prob0.05_assingments_head.tsv.gz"
-    in_blast = "../blast-multiplexed-seqs/4out_blast-output-parsed_head.tsv.gz"
+    # in_blast = "../blast-multiplexed-seqs/4out_blast-output-parsed_head.tsv.gz"
+    # in_demux = "../parse-demux-assignments/demultiplexed_prob0.05_assingments_head.tsv.gz"
+    in_blast = sys.argv[1]
+    in_demux = sys.argv[2]
 
     # Get prob name
     probname = re.search(r"_(prob.+?)_", os.path.split(in_demux)[1]).group(1)
