@@ -1,10 +1,11 @@
 library("ggplot2")
 
-setwd("/Users/ed/Work/demulitplexer-threshold-analysis-150311/blast-multiplexed-seqs/")
+setwd("/data/home/em13383/other/aware-demultiplexer/extras/demulitplexer-threshold-analysis-150311/blast-multiplexed-seqs")
 
 # Load data
-data = read.table("4out_blast-output-parsed.tsv", sep="\t", header=T,
+data = read.table(gzfile("4out_blast-output-parsed.tsv.gz"), sep="\t", header=T,
                   na.strings="None")
+?read.table
 head(data)
 
 # If there is a next best score then calc score difference
