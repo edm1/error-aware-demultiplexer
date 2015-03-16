@@ -1,4 +1,4 @@
-setwd("/Users/ed/Work/aware-demultiplexer/extras/demulitplexer-threshold-analysis-150311/compare_demux_to_blast/")
+setwd("/data/home/em13383/other/aware-demultiplexer/extras/demulitplexer-threshold-analysis-150311/compare_demux_to_blast")
 
 # Options
 if (interactive()) {
