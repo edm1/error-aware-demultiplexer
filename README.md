@@ -1,9 +1,9 @@
-Aware demultiplexer
+Aware Illumina Demultiplexer (AID)
 ===================
 
 Current version: v1.0.2
 
-Probabilistic demultiplexer for Illumina BCL files. Works with:
+AID is a probabilistic demultiplexer for Illumina BCL files. It works with:
 - single or dual-indexed reads
 - single or pair-end reads
 
