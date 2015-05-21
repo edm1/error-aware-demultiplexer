@@ -1,7 +1,7 @@
 Error Aware Demultiplexer (EAD)
 ===================
 
-Current version: v1.0.2
+Current version: v1.0.3
 
 EAD is a probabilistic demultiplexer for Illumina BCL files. It works with:
 - single or dual-indexed reads
