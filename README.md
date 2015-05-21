@@ -28,23 +28,23 @@ Using pypy3 instead of python3 will give approximately 3x speed up. If you do no
 The script is split into two sub-commands `bcl2fastq` and `demux`.
 
 ```
-usage: pypy3 aware.py [-h] [-v] <subcommand> [options]
+usage: pypy3 ead.py [-h] [-v] <subcommand> [options]
 
-The aware.py sub-commands include:
+The ead.py sub-commands include:
     bcl2fastq    Extracts multiplexed reads and barcodes from Illumina bcl
                  files.
     demux        Demultiplex the fastqs extracted by bcl2fastq using indexes
                  provided in sampleSheet.csv.
 ```
 
-To see further help for each sub-command use `pypy3 aware.py <subcommand> -h`.
+To see further help for each sub-command use `pypy3 ead.py <subcommand> -h`.
 
 #### Sub-command: bcl2fastq
 
 `bcl2fastq` extracts read and barcode fastq files from Illumina .bcl files.
 
 ```
-usage: pypy3 aware.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
+usage: pypy3 ead.py bcl2fastq [-h] [--outDir <str>] [--numCPU <int>]
                                 [--readsPerTile <int>] [--MaxInRam <int>]
                                 [--JavaRAM <int>] [--PicardJar <path>]
                                 <baseCallDir> <runParameters.xml> <lane>
@@ -94,7 +94,7 @@ MiSeqAnalysis
 Demultiplex the fastqs extracted by bcl2fastq using index sequences provided in sampleSheet.csv.
 
 ```
-usage: pypy3 aware.py demux [-h] [--uniqID <str>] [--minProb <float>]
+usage: pypy3 ead.py demux [-h] [--uniqID <str>] [--minProb <float>]
                             [--phredOffset <int>] [--indexQual <int>]
                             <inDir> <SampleSheet.csv>
 ```
