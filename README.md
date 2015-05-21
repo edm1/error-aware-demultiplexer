@@ -16,7 +16,7 @@ The demultiplexer has only been tested with MiSeq BCLs but theoretically should 
 - Java Runtime Environment (tested with openjdk-7-jre and Java SE Runtime Env 1.8)
 
 #### Download
-The repository can be downloaded using `git clone https://github.com/edm1/aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
+The repository can be downloaded using `git clone git@github.com:edm1/error-aware-demultiplexer.git` or by following the *Download ZIP* link on the right.
 
 #### Recommended
 - [PyPy3](http://pypy.org/) (>=2.4.0)
