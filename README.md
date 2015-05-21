@@ -1,11 +1,13 @@
-Aware Illumina Demultiplexer (AID)
+Error Aware Demultiplexer (EAD)
 ===================
 
 Current version: v1.0.2
 
-AID is a probabilistic demultiplexer for Illumina BCL files. It works with:
+EAD is a probabilistic demultiplexer for Illumina BCL files. It works with:
 - single or dual-indexed reads
 - single or pair-end reads
+
+The demultiplexer has only been tested with MiSeq BCLs but theoretically should work for any Illumina platform.
 
 ## Setup
 
