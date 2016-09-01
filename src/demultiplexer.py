@@ -220,13 +220,13 @@ def match_barcode_to_indexes(barcode_records, sampleSheet, min_prob):
 class Sample:
     # Class for each possible sample. 1) Holds the output directory for that
     # sample. 2) Opens handles. 3) Writes record to sample.
-    
+
     def __init__(self, name, out_dir, is_pe, id_dual):
         self.read_paths = []
         self.barcode_paths = []
         self.read_handles = None
         self.barcode_handles = None
-        
+
         # Create directory for sample
         name = name.replace(' ', '_')
         self.sample_dir = os.path.join(out_dir, name)
@@ -307,6 +307,9 @@ class SampleSheet:
                 # Get info
                 parts = line.rstrip().split(',')
                 sample_name = parts[col_ind['sample_name']]
+                # If sample_name is empty, take sample_id instead
+                if sample_name == "":
+                    sample_name = parts[col_ind['sample_id']]
                 # Get first index
                 index1 = parts[col_ind['index']]
                 sample_indexes[sample_name] = [index1]
@@ -314,7 +317,7 @@ class SampleSheet:
                 if self.is_dualindexed:
                     index2 = parts[col_ind['index2']]
                     sample_indexes[sample_name].append(index2)
-        
+
         # Convert indexes to seqIO seqRecords
         self.sample_indexes = self.convert_index_to_fastqRecord(sample_indexes,
             index_qual, base_prob_precompute)
@@ -401,7 +404,7 @@ class Multiplex:
 
         # Iterate through records
         for r1_record in read_iterators[0]:
-            
+
             # Get read records
             read_records = [r1_record]
             if self.is_pairend:
